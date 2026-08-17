@@ -12,7 +12,7 @@ string groupNames[]  = {"Group_A"};
 // 1) 所有灯先置为红灯
 for (int i = 1; i <= lightNames.length; i++) {
     Object light = Model.find(lightNames[i]);
-    if (light) light.labels["phase"].value = "RED";
+    if (light) setlabelstr(light, "phase", "RED");
 }
 
 // 2) 每个 Locker 预锁其 Group 内所有控制区域

@@ -1,13 +1,17 @@
 // ============================================================
-// 灯实体 → Triggers → OnReset
+// 灯实体 → Triggers → OnReset（模型原版代码）
 // 复位：所有灯变灰，phase 归 GREEN
 // ============================================================
+/**Custom Code*/
 Object light = ownerobject(c);
-light.labels["phase"].value = "GREEN";
 
-Object red = light.find("red");
-Object green = light.find("green");
-Object yellow = light.find("yellow");
-if (red) red.color = Color(0.5, 0.5, 0.5, 1);
-if (green) green.color = Color(0.5, 0.5, 0.5, 1);
-if (yellow) yellow.color = Color(0.5, 0.5, 0.5, 1);
+setlabelstr(light, "phase", "GREEN");
+
+Object red = light.find(">visual/drawsurrogate/red");
+red.color = Color(0.5, 0.5, 0.5, 1);
+
+Object green = light.find(">visual/drawsurrogate/green");
+green.color = Color(0.5, 0.5, 0.5, 1);
+
+Object yellow = light.find(">visual/drawsurrogate/yellow");
+yellow.color = Color(0.5, 0.5, 0.5, 1);

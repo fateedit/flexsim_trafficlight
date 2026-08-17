@@ -1,30 +1,50 @@
 // ============================================================
-// 灯实体 → Triggers → OnModelStart
+// 灯实体 → Triggers → OnModelStart（模型原版代码）
 // 按偏移时间定位初始状态，启动消息循环
 // ============================================================
+/**Custom Code*/
 Object light = ownerobject(c);
 
-double greenDur = light.labels["绿灯时长"].value;
-double flashDur = light.labels["黄闪时长"].value;
-double redDur = light.labels["红灯时长"].value;
-double offset = light.labels["偏移时间"].value;
+double greenDur = getlabelnum(light, "绿灯时长");
+double flashDur = getlabelnum(light, "黄闪时长");
+double redDur = getlabelnum(light, "红灯时长");
+double offset = getlabelnum(light, "偏移时间");
 
 double totalCycle = greenDur + flashDur + redDur;
 double t = fmod(offset, totalCycle);
 
 string state;
 double remaining;
+
 if (t < greenDur) {
     state = "GREEN";
     remaining = greenDur - t;
 } else if (t < greenDur + flashDur) {
     state = "YELLOW";
-    remaining = (greenDur + flashDur) - t;
+    remaining = greenDur + flashDur - t;
 } else {
     state = "RED";
     remaining = totalCycle - t;
 }
 
-light.labels["phase"].value = state;
-setLightColor(light, state);
-senddelayedmessage(light, remaining, current, state);
+setlabelstr(light, "phase", state);
+
+Object red = light.find(">visual/drawsurrogate/red");
+Object green = light.find(">visual/drawsurrogate/green");
+Object yellow = light.find(">visual/drawsurrogate/yellow");
+
+red.color = Color(0.3, 0, 0);
+green.color = Color(0, 0.3, 0);
+yellow.color = Color(0.3, 0.3, 0);
+
+if (state == "GREEN") {
+    green.color = Color(0, 1, 0);
+}
+if (state == "YELLOW") {
+    yellow.color = Color(1, 1, 0);
+}
+if (state == "RED") {
+    red.color = Color(1, 0, 0);
+}
+
+senddelayedmessage(light, remaining, current);

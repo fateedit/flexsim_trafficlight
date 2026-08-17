@@ -62,7 +62,6 @@
 
 | 类型 | 文件 | 粘贴位置 | 作用 |
 |------|------|----------|------|
-| Global Code | [setLightColor.flexscript](code/setLightColor.flexscript) | Model → Scripts → Global Code | 变色函数 |
 | 触发器 1 | [OnModelStart.flexscript](code/OnModelStart.flexscript) | 灯 → Triggers → OnModelStart | 启动对时（偏移计算） |
 | 触发器 2 | [OnMessage.flexscript](code/OnMessage.flexscript) | 灯 → Triggers → OnMessage | 状态切换 + 红灯锁/绿灯放控制区 |
 | 触发器 3 | [OnReset.flexscript](code/OnReset.flexscript) | 灯 → Triggers → OnReset | 复位变灰 |

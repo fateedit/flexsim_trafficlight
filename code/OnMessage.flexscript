@@ -1,64 +1,106 @@
 // ============================================================
-// 灯实体 → Triggers → OnMessage
-// 状态切换（绿→黄→红→绿）+ 锁定/释放控制区域
+// 灯实体 → Triggers → OnMessage（模型原版代码）
+// 状态切换（绿→黄→红→绿）+ 红灯锁定/绿灯释放控制区域
 // ============================================================
+/**Custom Code*/
 Object light = ownerobject(c);
-string state = msgparam(1);   // 由 OnModelStart / 上一次 OnMessage 传入
+string state = getlabelstr(light, "phase");
+double greenDur = getlabelnum(light, "绿灯时长");
+double flashDur = getlabelnum(light, "黄闪时长");
+double redDur = getlabelnum(light, "红灯时长");
 
-double greenDur = light.labels["绿灯时长"].value;
-double flashDur = light.labels["黄闪时长"].value;
-double redDur = light.labels["红灯时长"].value;
+string nextState;
+double delay;
 
-string nextState; double delay;
 if (state == "GREEN") {
-    nextState = "YELLOW"; delay = flashDur;
+    nextState = "YELLOW";
+    delay = flashDur;
 } else if (state == "YELLOW") {
-    nextState = "RED"; delay = redDur;
-} else {  // RED
-    nextState = "GREEN"; delay = greenDur;
+    nextState = "RED";
+    delay = redDur;
+} else {
+    nextState = "GREEN";
+    delay = greenDur;
 }
 
-light.labels["phase"].value = nextState;
-setLightColor(light, nextState);
+setlabelstr(light, "phase", nextState);
 
-// ===== 占用逻辑：红灯锁、绿灯放（配了 lockerName/groupName 标签才生效）=====
+// ===== 颜色控制 =====
+Object red = light.find(">visual/drawsurrogate/red");
+Object green = light.find(">visual/drawsurrogate/green");
+Object yellow = light.find(">visual/drawsurrogate/yellow");
+
+red.color = Color(0.3, 0, 0);
+green.color = Color(0, 0.3, 0);
+yellow.color = Color(0.3, 0.3, 0);
+
+if (nextState == "GREEN") {
+    green.color = Color(0, 1, 0);
+}
+if (nextState == "YELLOW") {
+    yellow.color = Color(1, 1, 0);
+}
+if (nextState == "RED") {
+    red.color = Color(1, 0, 0);
+}
+
+// ===== 必须放在占用逻辑之前 =====
+senddelayedmessage(light, delay, current);
+
+// ===== 占用逻辑 =====
 Object locker = getlabel(light, "lockerName");
 Object grp = getlabel(light, "groupName");
+
 if (locker && grp) {
     Group theGroup = Group(grp.name);
 
-    // 离开 GREEN → 锁定该方向控制区域（车辆在最近控制点停车）
+    // 离开 GREEN → 锁定该方向
     if (state == "GREEN") {
         for (int i = 1; i <= theGroup.length; i++) {
             Object caObj = theGroup[i];
             if (!caObj) continue;
+
             AGV.AllocatableObject ca = caObj.as(AGV.AllocatableObject);
+
             int alreadyLocked = 0;
-            for (int j = 1; j <= ca.allocations.length; j++)
-                if (string(ca.allocations[j].allocator.name) == locker.name) { alreadyLocked = 1; break; }
-            if (!alreadyLocked)
-                for (int j = 1; j <= ca.requests.length; j++)
-                    if (string(ca.requests[j].allocator.name) == locker.name) { alreadyLocked = 1; break; }
-            if (!alreadyLocked) ca.allocate(locker, 1);
+            for (int j = 1; j <= ca.allocations.length; j++) {
+                AGV.AllocationPoint ap = ca.allocations[j];
+                if (string(ap.allocator.name) == locker.name) { alreadyLocked = 1; break; }
+            }
+            if (!alreadyLocked) {
+                for (int j = 1; j <= ca.requests.length; j++) {
+                    AGV.AllocationPoint ap = ca.requests[j];
+                    if (string(ap.allocator.name) == locker.name) { alreadyLocked = 1; break; }
+                }
+            }
+
+            if (!alreadyLocked) {
+                ca.allocate(locker, 1);
+            }
         }
     }
 
-    // 进入 GREEN → 释放该方向控制区域（车辆通过）
+    // 进入 GREEN → 释放该方向
     if (nextState == "GREEN") {
         for (int i = 1; i <= theGroup.length; i++) {
             Object caObj = theGroup[i];
             if (!caObj) continue;
+
             AGV.AllocatableObject ca = caObj.as(AGV.AllocatableObject);
+
             for (int j = ca.allocations.length; j >= 1; j--) {
                 AGV.AllocationPoint ap = ca.allocations[j];
-                if (string(ap.allocator.name) == locker.name) ap.deallocate();
+                if (string(ap.allocator.name) == locker.name) {
+                    ap.deallocate();
+                    pt("UNLOCKED: " + caObj.name + "\n");
+                }
             }
             for (int j = ca.requests.length; j >= 1; j--) {
                 AGV.AllocationPoint ap = ca.requests[j];
-                if (string(ap.allocator.name) == locker.name) ap.deallocate();
+                if (string(ap.allocator.name) == locker.name) {
+                    ap.deallocate();
+                }
             }
         }
     }
 }
-
-senddelayedmessage(light, delay, current, nextState);
