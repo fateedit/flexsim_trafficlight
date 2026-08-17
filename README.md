@@ -2,7 +2,7 @@
 
 一个基于 FlexSim 的**多路口红绿灯控制模型**：用 TaskExecuter + DrawSurrogate 搭建三色灯，通过标签驱动状态机控制灯的轮转，并结合 **Locker / Group / ControlArea** 对 AGV 路径做占用与放行控制。
 
-> **本仓库包含：搭建文档 + 模型文件**（`models/cs 灯光.fsm`，三个路口完整模型）。模型直接打开即可运行；文档用于理解逻辑、按需修改和从零复现。
+> **本仓库包含：搭建文档 + 模型文件**（`models/红绿灯.fsm`，三个路口完整模型）。模型直接打开即可运行；文档用于理解逻辑、按需修改和从零复现。
 > 打开模型需要 **FlexSim 2026**（商业软件，可用学生版/试用版），建议对 FlexSim 的标签、触发器、AGV 模块有一定了解。
 
 ## 演示
@@ -17,7 +17,7 @@
 flexsim_trafficlight/
 ├── README.md                      ← 本文件：模型说明 + 模型原理 + 从零搭建指南
 ├── models/
-│   ├── cs 灯光.fsm                ← 三个路口红绿灯完整模型（FlexSim 2026 打开）
+│   ├── 红绿灯.fsm                ← 三个路口红绿灯完整模型（FlexSim 2026 打开）
 │   ├── trafficlight.fsl           ← 红绿灯用户库文件（注册后可从库面板直接拖出）
 │   └── fbx/
 │       ├── 杆横向.fbx             ← 灯柱（横臂）3D 模型
@@ -37,8 +37,8 @@ flexsim_trafficlight/
 
 ## 模型文件与运行要求
 
-- **模型**：`models/cs 灯光.fsm` —— 包含 1/2/3 号三个路口的 11 个红绿灯、AGV 路网与占用/放行逻辑，打开即可运行。
-- **打开方式**：FlexSim 2026（中文版）→ File → Open → 选择 `models/cs 灯光.fsm` → 点击 Run。
+- **模型**：`models/红绿灯.fsm` —— 包含 1/2/3 号三个路口的 11 个红绿灯、AGV 路网与占用/放行逻辑，打开即可运行。
+- **打开方式**：FlexSim 2026（中文版）→ File → Open → 选择 `models/红绿灯.fsm` → 点击 Run。
 - **版本要求**：模型为 FlexSim 2026 格式（文件头 `flexsimtree 26.0`），低版本可能无法打开或显示异常。
 - **3D 外观依赖（路径要求）**：模型外观使用外部 FBX 模型（`杆横向.fbx` 灯柱 + `灯0.fbx` 灯体），构建时保存的是本机绝对路径。仓库已在 `models/fbx/` 附带这两个文件，换电脑打开后若 3D 显示不全，需在 FlexSim 里重新指定外观路径（选中灯实体 → 外观 → 重新选择 FBX），或把 FBX 复制到原路径。完整说明见 [模型3D外观与用户库](docs/模型3D外观与用户库.md)。
 - **用户库**：`models/trafficlight.fsl` 是红绿灯用户库文件——放到 FlexSim 的 libraries 目录（如 `D:\Common\flexsim\libraries\TerminalSim\`），或通过 **工具 → 全局设置 → 用户库 → 添加** 注册后，即可从库面板直接拖出红绿灯实体。
