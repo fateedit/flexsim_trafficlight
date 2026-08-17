@@ -39,8 +39,26 @@ flexsim_trafficlight/
 - **打开方式**：FlexSim 2026（中文版）→ File → Open → 选择 `models/红绿灯.fsm` → 点击 Run。
 - **版本要求**：模型为 FlexSim 2026 格式（文件头 `flexsimtree 26.0`），低版本可能无法打开或显示异常。
 - **3D 外观依赖（路径要求）**：模型外观使用外部 FBX 模型（`杆横向.fbx` 灯柱 + `灯0.fbx` 灯体），构建时保存的是本机绝对路径。仓库已在 `models/fbx/` 附带这两个文件，换电脑打开后若 3D 显示不全，需在 FlexSim 里重新指定外观路径（选中灯实体 → 外观 → 重新选择 FBX），或把 FBX 复制到原路径。完整说明见 [模型3D外观与用户库](docs/模型3D外观与用户库.md)。
-- **用户库**：`models/trafficlight.fsl` 是红绿灯用户库文件——放到 FlexSim 的 libraries 目录（如 `D:\Common\flexsim\libraries\TerminalSim\`），或通过 **工具 → 全局设置 → 用户库 → 添加** 注册后，即可从库面板直接拖出红绿灯实体。
+- **用户库**：`models/trafficlight.fsl` 是红绿灯用户库文件——**别人可以直接下载它装进自己的 FlexSim 使用**（见下节"快速上手"）。
 - 搭建步骤与逻辑细节见下文及 `docs/` 目录。
+
+## 别人怎么用这个仓库（快速上手）
+
+**方式一：直接运行完整模型**
+
+下载 `models/红绿灯.fsm`，用 FlexSim 2026 打开 → 点击 Run 即可看到效果。
+
+**方式二：只装用户库，在自己的模型里直接拖出红绿灯（推荐复用）**
+
+1. **下载**：`models/trafficlight.fsl`（建议连同 `models/fbx/` 两个文件一起下载）；
+2. **安装**（二选一）：
+   - 把 `trafficlight.fsl` 放到 FlexSim 的 libraries 目录，如 `D:\Common\flexsim\libraries\TerminalSim\`；
+   - 或：FlexSim 菜单 **工具 → 全局设置 → 用户库 → 添加**，选择 `trafficlight.fsl`；
+3. **使用**：打开你自己的模型，在库面板搜索 "trafficlight"，把红绿灯实体**直接拖进场景**，再按 [配置详解](docs/配置详解.md) 配置方向、标签和 ControlArea，运行即可。
+
+> 💡 **如果拖出来的灯没有 3D 外观**：灯的模型外观引用的是外部 FBX 文件。把 `models/fbx/` 里的 `杆横向.fbx`（灯柱）和 `灯0.fbx`（灯体）放到你电脑上，然后在灯实体的外观属性里重新选择这两个文件即可（详见 [模型3D外观与用户库](docs/模型3D外观与用户库.md)）。
+
+> 逻辑（变色、锁/放）全部在标签和脚本里，跟着用户库一起走，不需要另外配置。
 
 ## 最基本的红绿灯是怎么做的
 
