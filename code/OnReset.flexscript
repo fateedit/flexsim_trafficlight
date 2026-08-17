@@ -1,0 +1,13 @@
+// ============================================================
+// 灯实体 → Triggers → OnReset
+// 复位：所有灯变灰，phase 归 GREEN
+// ============================================================
+Object light = ownerobject(c);
+light.labels["phase"].value = "GREEN";
+
+Object red = light.find("red");
+Object green = light.find("green");
+Object yellow = light.find("yellow");
+if (red) red.color = Color(0.5, 0.5, 0.5, 1);
+if (green) green.color = Color(0.5, 0.5, 0.5, 1);
+if (yellow) yellow.color = Color(0.5, 0.5, 0.5, 1);

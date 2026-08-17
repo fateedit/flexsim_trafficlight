@@ -1,0 +1,30 @@
+// ============================================================
+// 灯实体 → Triggers → OnModelStart
+// 按偏移时间定位初始状态，启动消息循环
+// ============================================================
+Object light = ownerobject(c);
+
+double greenDur = light.labels["绿灯时长"].value;
+double flashDur = light.labels["黄闪时长"].value;
+double redDur = light.labels["红灯时长"].value;
+double offset = light.labels["偏移时间"].value;
+
+double totalCycle = greenDur + flashDur + redDur;
+double t = fmod(offset, totalCycle);
+
+string state;
+double remaining;
+if (t < greenDur) {
+    state = "GREEN";
+    remaining = greenDur - t;
+} else if (t < greenDur + flashDur) {
+    state = "YELLOW";
+    remaining = (greenDur + flashDur) - t;
+} else {
+    state = "RED";
+    remaining = totalCycle - t;
+}
+
+light.labels["phase"].value = state;
+setLightColor(light, state);
+senddelayedmessage(light, remaining, current, state);

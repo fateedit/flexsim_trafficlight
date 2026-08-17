@@ -1,0 +1,37 @@
+// ============================================================
+// 初始化预锁
+// 粘贴位置：Model → Triggers（OnModelStart 或独立触发器）
+// 作用：启动时所有灯置红灯、所有控制区域预锁，
+//       防止启动瞬间车辆闯进路口
+// ============================================================
+// ===== 只需改这三个数组（改成你自己的名字）=====
+string lightNames[]  = {"灯1", "灯2"};       // 该路口所有灯
+string lockerNames[] = {"Locker_A"};          // 与 groupNames 一一对应
+string groupNames[]  = {"Group_A"};
+
+// 1) 所有灯先置为红灯
+for (int i = 1; i <= lightNames.length; i++) {
+    Object light = Model.find(lightNames[i]);
+    if (light) light.labels["phase"].value = "RED";
+}
+
+// 2) 每个 Locker 预锁其 Group 内所有控制区域
+for (int k = 1; k <= lockerNames.length; k++) {
+    Object locker = Model.find(lockerNames[k]);
+    Group grp = Group(groupNames[k]);
+    if (!locker) continue;
+
+    for (int i = 1; i <= grp.length; i++) {
+        Object caObj = grp[i];
+        if (!caObj) continue;
+        AGV.AllocatableObject ca = caObj.as(AGV.AllocatableObject);
+
+        int locked = 0;
+        for (int j = 1; j <= ca.allocations.length; j++)
+            if (ca.allocations[j].allocator == locker) { locked = 1; break; }
+        if (!locked)
+            for (int j = 1; j <= ca.requests.length; j++)
+                if (ca.requests[j].allocator == locker) { locked = 1; break; }
+        if (!locked) ca.allocate(locker, 1);
+    }
+}

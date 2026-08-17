@@ -56,6 +56,18 @@
 
 > 如果灯没有 3D 外观：把 `models/fbx/` 里的 `杆横向.fbx`（灯柱）、`灯0.fbx`（灯体）放到自己电脑上，在灯的外观属性里重新选择即可。
 
+## 代码
+
+想自己搭或改逻辑，直接点开下面的代码文件（可查看、可复制）：
+
+| 文件 | 粘贴位置 | 作用 |
+|------|----------|------|
+| [setLightColor.flexscript](code/setLightColor.flexscript) | Model → Scripts → Global Code | 变色函数 |
+| [OnModelStart.flexscript](code/OnModelStart.flexscript) | 灯 → Triggers → OnModelStart | 启动对时（偏移计算） |
+| [OnMessage.flexscript](code/OnMessage.flexscript) | 灯 → Triggers → OnMessage | 状态切换 + 红灯锁/绿灯放控制区 |
+| [OnReset.flexscript](code/OnReset.flexscript) | 灯 → Triggers → OnReset | 复位变灰 |
+| [init_lock.flexscript](code/init_lock.flexscript) | Model → Triggers | 启动预锁全部控制区 |
+
 ## 文件说明
 
 ```
@@ -64,6 +76,7 @@ flexsim_trafficlight/
 │   ├── 红绿灯.fsm        ← 完整模型（打开直接跑）
 │   ├── trafficlight.fsl  ← 用户库（装进 FlexSim，拖出来用）
 │   └── fbx/              ← 灯柱/灯体 3D 模型（外观用）
+├── code/                 ← 代码文件（点链接查看/复制）
 └── docs/
     ├── demo-traffic-light.gif   ← 演示动态图
     └── demo-traffic-light.mp4   ← 演示视频
