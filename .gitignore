@@ -1,0 +1,15 @@
+# 操作系统
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Obsidian
+.obsidian/
+
+# 临时文件
+*.tmp
