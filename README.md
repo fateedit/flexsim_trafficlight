@@ -25,7 +25,8 @@ flexsim_trafficlight/
 └── docs/
     ├── demo-traffic-light.mp4      ← 模型运行演示录像（35s，README 可在线播放）
     ├── 配置详解.md                 ← 先干嘛后干嘛的完整配置顺序（ControlArea 控制点/Group/Locker/标签/脚本）⭐
-    ├── 占用模块.md                ← 红绿灯占用/放行模块的通用搭建教程`n    ├── 配时逻辑与标签详解.md        ← 配时逻辑（偏移/周期/红灯计算）+ 标签与 lockerName/groupName 详解 ⭐
+    ├── 占用模块.md                ← 红绿灯占用/放行模块的通用搭建教程
+    ├── 配时逻辑与标签详解.md        ← 配时逻辑（偏移/周期/红灯计算）+ 标签与 lockerName/groupName 详解 ⭐
     ├── 控制区域与占用逻辑详解.md     ← ControlArea 占用逻辑深度解析（位置/三级结构/时序/坑）⭐
     ├── 模型3D外观与用户库.md        ← 3D 外观构建（灯柱+3灯/FBX/用户库）与工作原理 ⭐
     ├── 模型blender.md             ← 用 Blender 脚本生成红绿灯 3D 模型的另一种做法
@@ -515,9 +516,7 @@ while (true) {
 
 ## 相关文档
 
-
-
-
+- [配置详解](docs/配置详解.md) — 先干嘛后干嘛的完整配置顺序（ControlArea 控制点/Group/Locker/标签/脚本）⭐
 - [配时逻辑与标签详解](docs/配时逻辑与标签详解.md) — 偏移时间计算、周期/红灯公式、标签与 lockerName/groupName 详解
 - [占用模块](docs/占用模块.md) — 红绿灯占用/放行模块的通用搭建教程
 - [控制区域与占用逻辑详解](docs/控制区域与占用逻辑详解.md) — ControlArea 位置、Locker/Group/ControlArea 三级机制、占用时序与常见坑 ⭐
