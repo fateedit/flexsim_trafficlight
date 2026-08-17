@@ -7,9 +7,9 @@
 
 ## 演示
 
-<video src="docs/demo-traffic-light.mp4" width="720" controls></video>
+![红绿灯运行演示](docs/demo-traffic-light.gif)
 
-> 模型运行演示（红绿灯轮转 + AGV 通行/停车效果）。[直接下载视频](docs/demo-traffic-light.mp4)
+> 动态图演示（红绿灯轮转 + AGV 通行/停车效果）。[下载 35 秒完整演示视频](docs/demo-traffic-light.mp4)
 
 ## 仓库结构
 
@@ -23,7 +23,8 @@ flexsim_trafficlight/
 │       ├── 杆横向.fbx             ← 灯柱（横臂）3D 模型
 │       └── 灯0.fbx                ← 灯体 3D 模型（三个灯复用，着色区分）
 └── docs/
-    ├── demo-traffic-light.mp4      ← 模型运行演示录像（README 可在线播放）
+    ├── demo-traffic-light.gif      ← 运行演示动态图（README 首页直接播放）
+    ├── demo-traffic-light.mp4      ← 35 秒完整演示录像（可下载）
     ├── 配置详解.md                 ← 先干嘛后干嘛的完整配置顺序（ControlArea 控制点/Group/Locker/标签/脚本）⭐
     ├── 占用模块.md                ← 红绿灯占用/放行模块的通用搭建教程
     ├── 配时逻辑与标签详解.md        ← 配时逻辑（偏移/周期/红灯计算）+ 标签与 lockerName/groupName 详解 ⭐
