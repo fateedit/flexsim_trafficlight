@@ -32,6 +32,48 @@ flexsim-traffic-light/
 
 ---
 
+## 模型原理
+
+### 1. 灯 = 状态机
+
+每个灯是一个独立的状态机，用 `phase` 标签记录当前状态，靠 `senddelayedmessage` 定时推进：
+
+- **三态**（1号路口）：`GREEN → YELLOW → RED → GREEN`
+- **五态**（2/3号路口）：`GREEN → YELLOW → ALLRED → RED → YELLOW2 → GREEN`
+
+黄灯后的 `ALLRED`（全红）用于清空路口内已进入的车辆，避免下一个方向的车辆提前驶入，防止路口交叉冲突。
+
+### 2. 相位错开 = 偏移时间
+
+同一路口所有灯的**周期必须相等**，各灯用 `偏移时间` 错开绿灯起点，保证任意时刻只有 1 个方向组为 GREEN：
+
+```
+灯 N 的偏移 = 前面所有灯的（绿灯 + 黄闪 + 全红）之和
+```
+
+模型启动时 OnModelStart 用 `fmod(偏移, 周期)` 算出当前落在哪个状态，所有灯瞬间就处于正确相位，无需等待对时。
+
+三个路口配时值的完整推导与逐灯校验（绿灯窗口互不重叠）见 [路口配时参数](docs/路口配时参数.md)。
+
+### 3. AGV 通行控制 = 占用/放行
+
+灯本身不拦截 AGV，通行控制靠 **Locker + Group + ControlArea** 三级配合：
+
+| 组件 | 作用 |
+|------|------|
+| `ControlArea` | 铺在 AGV 路径上的禁行/停车区 |
+| `Group` | 把同一方向的所有 ControlArea 归为一组 |
+| `Locker` | 对一组 ControlArea 统一加锁/解锁 |
+
+**绿灯 = 解除锁定（放行），红灯 = 重新锁定（AGV 在 ControlArea 前停车）**。锁定逻辑有两条路径，结果一致：
+
+- **1号路口**：灯实体 OnMessage 直接锁/放（通过 `lockerName`/`groupName` 标签），另有 ProcessFlow 双保险
+- **2/3号路口**：ProcessFlow 子流程轮询 `phase` 标签控制
+
+通用实现细节见 [占用模块](docs/占用模块.md)。
+
+---
+
 ## 第一步：Global Code（一个通用函数，三个路口共用）
 
 **位置**：Model → Scripts → Global Code，粘贴一次即可。五态里的 `ALLRED` 显示为红、`YELLOW2` 显示为黄，所以三态/五态可共用：
