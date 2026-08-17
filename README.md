@@ -2,14 +2,14 @@
 
 一个基于 FlexSim 的**多路口红绿灯控制模型**：用 TaskExecuter + DrawSurrogate 搭建三色灯，通过标签驱动状态机控制灯的轮转，并结合 **Locker / Group / ControlArea** 对 AGV 路径做占用与放行控制。
 
-> **本仓库包含：搭建文档 + 模型文件**（`models/红绿灯.fsm`，三个路口完整模型）。模型直接打开即可运行；文档用于理解逻辑、按需修改和从零复现。
+> **本仓库包含：搭建文档 + 模型文件**（`models/红绿灯.fsm`，一个多路口红绿灯完整模型示例）。模型直接打开即可运行；文档讲解**通用逻辑与搭建方法**，可复现到你自己的路网。
 > 打开模型需要 **FlexSim 2026**（商业软件，可用学生版/试用版），建议对 FlexSim 的标签、触发器、AGV 模块有一定了解。
 
 ## 演示
 
 <video src="docs/demo-traffic-light.mp4" width="720" controls></video>
 
-> 35 秒模型运行演示（三个路口红绿灯轮转 + AGV 通行/停车效果）。[直接下载视频](docs/demo-traffic-light.mp4)
+> 模型运行演示（红绿灯轮转 + AGV 通行/停车效果）。[直接下载视频](docs/demo-traffic-light.mp4)
 
 ## 仓库结构
 
@@ -17,13 +17,13 @@
 flexsim_trafficlight/
 ├── README.md                      ← 本文件：模型说明 + 模型原理 + 从零搭建指南
 ├── models/
-│   ├── 红绿灯.fsm                ← 三个路口红绿灯完整模型（FlexSim 2026 打开）
+│   ├── 红绿灯.fsm                ← 红绿灯完整模型示例（FlexSim 2026 打开）
 │   ├── trafficlight.fsl           ← 红绿灯用户库文件（注册后可从库面板直接拖出）
 │   └── fbx/
 │       ├── 杆横向.fbx             ← 灯柱（横臂）3D 模型
 │       └── 灯0.fbx                ← 灯体 3D 模型（三个灯复用，着色区分）
 └── docs/
-    ├── demo-traffic-light.mp4      ← 模型运行演示录像（35s，README 可在线播放）
+    ├── demo-traffic-light.mp4      ← 模型运行演示录像（README 可在线播放）
     ├── 配置详解.md                 ← 先干嘛后干嘛的完整配置顺序（ControlArea 控制点/Group/Locker/标签/脚本）⭐
     ├── 占用模块.md                ← 红绿灯占用/放行模块的通用搭建教程
     ├── 配时逻辑与标签详解.md        ← 配时逻辑（偏移/周期/红灯计算）+ 标签与 lockerName/groupName 详解 ⭐
@@ -35,24 +35,29 @@ flexsim_trafficlight/
 
 ## 模型文件与运行要求
 
-- **模型**：`models/红绿灯.fsm` —— 包含 1/2/3 号三个路口的 11 个红绿灯、AGV 路网与占用/放行逻辑，打开即可运行。
+- **模型**：`models/红绿灯.fsm` —— 一个多路口红绿灯完整模型示例（11 个灯、AGV 路网与占用/放行逻辑），打开即可运行。
 - **打开方式**：FlexSim 2026（中文版）→ File → Open → 选择 `models/红绿灯.fsm` → 点击 Run。
 - **版本要求**：模型为 FlexSim 2026 格式（文件头 `flexsimtree 26.0`），低版本可能无法打开或显示异常。
 - **3D 外观依赖（路径要求）**：模型外观使用外部 FBX 模型（`杆横向.fbx` 灯柱 + `灯0.fbx` 灯体），构建时保存的是本机绝对路径。仓库已在 `models/fbx/` 附带这两个文件，换电脑打开后若 3D 显示不全，需在 FlexSim 里重新指定外观路径（选中灯实体 → 外观 → 重新选择 FBX），或把 FBX 复制到原路径。完整说明见 [模型3D外观与用户库](docs/模型3D外观与用户库.md)。
 - **用户库**：`models/trafficlight.fsl` 是红绿灯用户库文件——放到 FlexSim 的 libraries 目录（如 `D:\Common\flexsim\libraries\TerminalSim\`），或通过 **工具 → 全局设置 → 用户库 → 添加** 注册后，即可从库面板直接拖出红绿灯实体。
-- 三个路口的搭建步骤与逻辑细节见下文及 `docs/` 目录。
+- 搭建步骤与逻辑细节见下文及 `docs/` 目录。
 
-## 方案总览
+## 通用设计（总览）
 
-| 路口 | 灯数 | 逻辑 | 周期 | 状态循环 | 锁/放行 |
-|------|:---:|------|:---:|------|------|
-| 1号 | 4 | 两两配对（NS组 + EW组） | 94s | GREEN→YELLOW→RED | OnMessage + ProcessFlow |
-| 2号 | 4 | 四相位独立 | 117s | GREEN→YELLOW→ALLRED→RED→YELLOW2 | ProcessFlow |
-| 3号 | 3 | 三相位方向灯 | 108s | 同2号 | ProcessFlow |
+本系统是**通用**的红绿灯控制方案，不绑定任何具体路口。一个路口需要：
 
-每个灯 = 1 个 TaskExecuter + 3 个 DrawSurrogate 子实体（`red` / `green` / `yellow`）。
+- **N 个灯**（N = 该路口的相位方向数），每个灯 = 1 个 TaskExecuter（逻辑载体）+ 3 个 DrawSurrogate 子实体（`red` / `green` / `yellow`）；
+- **两种状态机**，按路口需求二选一：
 
----
+  | 状态机 | 状态循环 | 适用场景 |
+  |--------|----------|----------|
+  | 三态 | `GREEN → YELLOW → RED → GREEN` | 简单两相位，无全红清空需求 |
+  | 五态 | `GREEN → YELLOW → ALLRED → RED → YELLOW2 → GREEN` | 需要全红清空路口，防止相位切换时交叉冲突 |
+
+- **通行控制**：Locker + Group + ControlArea 三级，绿灯释放（放行）、红灯锁定（停车）；
+- **配时**：周期、红灯时长、偏移时间全部按公式计算（见 [配时逻辑与标签详解](docs/配时逻辑与标签详解.md)），不依赖具体路口。
+
+> 下文步骤以 "NS（南北）/ EW（东西）两个方向组" 为例说明；实际路口的灯数、方向组、配时按你的路网自定。
 
 ## 模型原理
 
@@ -60,8 +65,8 @@ flexsim_trafficlight/
 
 每个灯是一个独立的状态机，用 `phase` 标签记录当前状态，靠 `senddelayedmessage` 定时推进：
 
-- **三态**（1号路口）：`GREEN → YELLOW → RED → GREEN`
-- **五态**（2/3号路口）：`GREEN → YELLOW → ALLRED → RED → YELLOW2 → GREEN`
+- **三态**（无全红需求的路口）：`GREEN → YELLOW → RED → GREEN`
+- **五态**（需全红清空的路口）：`GREEN → YELLOW → ALLRED → RED → YELLOW2 → GREEN`
 
 黄灯后的 `ALLRED`（全红）用于清空路口内已进入的车辆，避免下一个方向的车辆提前驶入，防止路口交叉冲突。
 
@@ -87,16 +92,16 @@ flexsim_trafficlight/
 | `Group` | 把同一方向的所有 ControlArea 归为一组 |
 | `Locker` | 对一组 ControlArea 统一加锁/解锁 |
 
-**绿灯 = 解除锁定（放行），红灯 = 重新锁定（AGV 在 ControlArea 前停车）**。锁定逻辑有两条路径，结果一致：
+**绿灯 = 解除锁定（放行），红灯 = 重新锁定（AGV 在 ControlArea 前停车）**。锁定逻辑有两条实现路径，可任选其一或双保险：
 
-- **1号路口**：灯实体 OnMessage 直接锁/放（通过 `lockerName`/`groupName` 标签），另有 ProcessFlow 双保险
-- **2/3号路口**：ProcessFlow 子流程轮询 `phase` 标签控制
+- **灯实体 OnMessage 直控**：通过 `lockerName`/`groupName` 标签直接锁/放（适合灯少的路口）；
+- **ProcessFlow 子流程轮询**：轮询 `phase` 标签控制（独立运行、容错强）。
 
-通用实现细节见 [占用模块](docs/占用模块.md)。
+通用实现细节见 [占用模块](docs/占用模块.md) 与 [控制区域与占用逻辑详解](docs/控制区域与占用逻辑详解.md)。
 
 ---
 
-## 第一步：Global Code（一个通用函数，三个路口共用）
+## 第一步：Global Code（一个通用函数，所有灯共用）
 
 **位置**：Model → Scripts → Global Code，粘贴一次即可。五态里的 `ALLRED` 显示为红、`YELLOW2` 显示为黄，所以三态/五态可共用：
 
@@ -126,33 +131,14 @@ void setLightColor(Object light, string state) {
 
 ## 第二步：创建灯实体
 
-从 Library 拖 **TaskExecuter** 到场景，放到路口对应位置，按下表命名（共 11 个灯）：
+从 Library 拖 **TaskExecuter** 到场景，放到路口各方向对应位置。命名建议体现"方向 + 灯"（示例，名称按你的路网自定）：
 
-**1号路口（4 个，两两配对）**：
-
-| 名称 | 配对组 | 方向 |
-|------|:---:|------|
-| `TrafficLight_1_NS_N2S` | NS | 南向北 |
-| `TrafficLight_1_NS_S2N` | NS | 北向南 |
-| `TrafficLight_1_EW_W2E` | EW | 西向东 |
-| `TrafficLight_1_EW_E2W` | EW | 东向西 |
-
-**2号路口（4 个，四相位独立）**：
-
-| 名称 | 方向 |
+| 灯 | 方向 |
 |------|------|
-| `TrafficLight_A` | 南港八路 南向北 |
-| `TrafficLight_C` | 南港八路 北向南 |
-| `TrafficLight_B` | 自由港大道 西向东 |
-| `TrafficLight_D` | 自由港大道 东向西 |
+| `TrafficLight_NS` | 南北方向 |
+| `TrafficLight_EW` | 东西方向 |
 
-**3号路口（3 个，相位方向灯）**：
-
-| 名称 | 通行方向 |
-|------|---------|
-| `Phase_EW` | 东西左转 + 直行 |
-| `Phase_NS_S` | 南北直行 |
-| `Phase_NS_L` | 南北左转 |
+> 一个方向可能有多个灯（如南北左转/直行分开），命名时把方向写清楚即可。下文示例按两个方向组（NS/EW）说明。
 
 ### 子实体
 
@@ -171,57 +157,34 @@ void setLightColor(Object light, string state) {
 
 ## 第三步：添加标签
 
-每个灯 → Properties → Labels，添加 **6 个标签**（三路口统一一套，1号路口 `全红时长` 填 0 即可）：
+每个灯 → Properties → Labels，添加以下标签（三态路口 `全红时长` 填 0 即可）：
 
-| 标签名 | 类型 |
-|--------|------|
-| `绿灯时长` | number |
-| `黄闪时长` | number |
-| `红灯时长` | number |
-| `偏移时间` | number |
-| `全红时长` | number |
-| `phase` | string |
+| 标签名 | 类型 | 说明 |
+|--------|------|------|
+| `绿灯时长` | number | 绿灯秒数（按交通方案定） |
+| `黄闪时长` | number | 黄灯秒数 |
+| `红灯时长` | number | **公式算出**（见配时逻辑） |
+| `偏移时间` | number | **公式算出**（相位错开） |
+| `全红时长` | number | 五态路口用；三态填 0 |
+| `phase` | string | 当前状态，脚本自动维护 |
 
-> 1号路口每个灯**额外**加 2 个**对象类型**标签：`lockerName`、`groupName`，分别指向第六步中该灯对应的 Locker 与 Group（2号、3号路口不加）。
+> 若用 OnMessage 直控占用逻辑，每个灯**额外**加 2 个 **Pointer** 标签：`lockerName`（指向该方向 Locker）、`groupName`（指向该方向 Group）；若用 ProcessFlow 轮询则不需要。
 
-### 配时数值
+### 配时数值怎么填
 
-**1号路口**：
+配时值**按公式计算**，不是拍脑袋填：
 
-| 标签 | NS_N2S | NS_S2N | EW_W2E | EW_E2W |
-|------|:---:|:---:|:---:|:---:|
-| 绿灯时长 | 23 | 23 | 20 | 20 |
-| 黄闪时长 | 3 | 3 | 3 | 3 |
-| 红灯时长 | 68 | 68 | 71 | 71 |
-| 偏移时间 | 0 | 0 | 26 | 26 |
-| 全红时长 | 0 | 0 | 0 | 0 |
-| phase | GREEN | GREEN | GREEN | GREEN |
+```
+周期 = 绿灯 + 黄闪（+ 全红 + 黄闪）+ 红灯           （五态；三态无全红项）
+红灯时长 = 周期 - 绿灯 - 黄闪（- 全红 - 黄闪）
+偏移时间 = 前面所有灯的（绿灯 + 黄闪 [+ 全红]）之和
+```
 
-**2号路口**：
-
-| 标签 | A | C | B | D |
-|------|:---:|:---:|:---:|:---:|
-| 绿灯时长 | 30 | 18 | 35 | 18 |
-| 黄闪时长 | 2 | 2 | 2 | 2 |
-| 全红时长 | 2 | 2 | 2 | 2 |
-| 红灯时长 | 81 | 93 | 76 | 93 |
-| 偏移时间 | 0 | 34 | 56 | 95 |
-| phase | GREEN | GREEN | GREEN | GREEN |
-
-**3号路口**：
-
-| 标签 | Phase_EW | Phase_NS_S | Phase_NS_L |
-|------|:---:|:---:|:---:|
-| 绿灯时长 | 50 | 20 | 20 |
-| 黄闪时长 | 3 | 3 | 3 |
-| 全红时长 | 3 | 3 | 3 |
-| 红灯时长 | 49 | 79 | 79 |
-| 偏移时间 | 0 | 56 | 82 |
-| phase | GREEN | GREEN | GREEN |
+完整公式、通用示例与校验方法见 [配时逻辑与标签详解](docs/配时逻辑与标签详解.md)。模型 `models/红绿灯.fsm` 里各灯的标签值可作为一组现成例子对照。
 
 ---
 
-## 第四步：通用脚本（每盏灯粘贴三处，一套代码通吃三个路口）
+## 第四步：通用脚本（每盏灯粘贴三处，一套代码通吃三态/五态）
 
 ### 4.1 OnModelStart（自动识别三态/五态）
 
@@ -233,7 +196,7 @@ double greenDur = light.labels["绿灯时长"].value;
 double flashDur = light.labels["黄闪时长"].value;
 double redDur = light.labels["红灯时长"].value;
 double offset = light.labels["偏移时间"].value;
-double allRedDur = light.labels["全红时长"].value;   // 1号路口为 0
+double allRedDur = light.labels["全红时长"].value;   // 三态路口为 0
 
 // 状态序列：全红时长 > 0 → 五态；否则三态
 string seq[5]; double dur[5]; int n;
@@ -298,7 +261,7 @@ if (state == "GREEN") {
 light.labels["phase"].value = nextState;
 setLightColor(light, nextState);
 
-// ===== 占用逻辑（可选）：仅 1号路口配了 lockerName/groupName 标签时生效 =====
+// ===== 占用逻辑（可选）：仅当配了 lockerName/groupName 标签时生效 =====
 Object locker = getlabel(light, "lockerName");
 Object grp = getlabel(light, "groupName");
 if (locker && grp) {
@@ -362,9 +325,8 @@ if (yellow) yellow.color = Color(0.5, 0.5, 0.5, 1);
 
 点击 **Run**，观察：
 
-- 1号路口：NS 两灯同步变、EW 两灯同步变
-- 2号路口：A→C→B→D 依次 GREEN
-- 3号路口：EW→NS_S→NS_L 依次 GREEN
+- 每个灯按 绿 → 黄 → 红 轮转（五态还包含 全红/黄闪2）；
+- **同一方向组**的灯同步变；各方向按偏移时间**依次变绿**，任意时刻只有 1 个方向组为 GREEN。
 
 如不对，依次检查：① 子实体名是否全小写 `red`/`green`/`yellow` ② 标签类型是否 number（不是 string） ③ Global Code 是否保存。
 
@@ -372,19 +334,20 @@ if (yellow) yellow.color = Color(0.5, 0.5, 0.5, 1);
 
 ## 第六步：Locker 与 Group
 
-| 路口 | Locker ↔ Group |
-|------|------|
-| 1号 | `TrafficLightLocker_NS` ↔ `NS_Stop_CA_Group`（南北路径全部 ControlArea）；`TrafficLightLocker_EW` ↔ `EW_Stop_CA_Group`（东西路径全部） |
-| 2号 | 推荐与1号同构：A、C 共用 NS 套，B、D 共用 EW 套；也可拆 4 套：`TrafficLightLocker_A`↔`A_Stop_CA_Group`、`C`↔`C_Stop_CA_Group`、`B`↔`B_Stop_CA_Group`、`D`↔`D_Stop_CA_Group` |
-| 3号 | `Locker_EW`↔`Group_EW`、`Locker_NS_S`↔`Group_NS_S`、`Locker_NS_L`↔`Group_NS_L` |
+一个方向一套（示例：两个方向组）：
 
-> 3号路口南北右转路径**不加** ControlArea，右转始终自由。
+| 方向组 | Locker | Group | 成员 |
+|--------|--------|-------|------|
+| 南北 | `TrafficLightLocker_NS` | `NS_Stop_CA_Group` | 南北路径上的全部 ControlArea |
+| 东西 | `TrafficLightLocker_EW` | `EW_Stop_CA_Group` | 东西路径上的全部 ControlArea |
+
+> 右转不受控方向**不加** ControlArea，右转始终自由。
 
 ---
 
 ## 第七步：路面加 ControlArea 并归入 Group
 
-在路口各方向的 AGV 路径上添加 **ControlArea** 对象，分别拖入第六步对应的 Group。
+在路口各方向的 AGV 路径上添加 **ControlArea** 对象（放在停车线处、冲突区之前），分别拖入第六步对应的 Group。位置规则与图示见 [控制区域与占用逻辑详解](docs/控制区域与占用逻辑详解.md)。
 
 ---
 
@@ -427,13 +390,11 @@ for (int k = 1; k <= lockerNames.length; k++) {
 }
 ```
 
-三个路口只需填（照抄即可）：
+只需把三个数组填成你自己的名字（示例：两个方向组）：
 
-| 路口 | lightNames | lockerNames / groupNames |
-|------|-----------|--------------------------|
-| 1号 | `TrafficLight_1_NS_N2S`、`TrafficLight_1_NS_S2N`、`TrafficLight_1_EW_W2E`、`TrafficLight_1_EW_E2W` | `TrafficLightLocker_NS` / `NS_Stop_CA_Group`、`TrafficLightLocker_EW` / `EW_Stop_CA_Group` |
-| 2号 | `TrafficLight_A`、`TrafficLight_C`、`TrafficLight_B`、`TrafficLight_D` | 同上（2 套）；或 4 套 A/C/B/D |
-| 3号 | `Phase_EW`、`Phase_NS_S`、`Phase_NS_L` | `Locker_EW` / `Group_EW`、`Locker_NS_S` / `Group_NS_S`、`Locker_NS_L` / `Group_NS_L` |
+| lightNames | lockerNames | groupNames |
+|-----------|-------------|------------|
+| `TrafficLight_NS`、`TrafficLight_EW` | `TrafficLightLocker_NS`、`TrafficLightLocker_EW` | `NS_Stop_CA_Group`、`EW_Stop_CA_Group` |
 
 ---
 
@@ -479,17 +440,12 @@ while (true) {
 }
 ```
 
-按表创建子流程（每行 = 一个子流程）：
+按表创建子流程（每行 = 一个子流程，示例：两个方向组）：
 
-| 路口 | 子流程 | 灯 | Locker | Group |
-|------|------|-----|--------|-------|
-| 1号 | NS | `TrafficLight_1_NS_N2S` + `TrafficLight_1_NS_S2N` | `TrafficLightLocker_NS` | `NS_Stop_CA_Group` |
-| 1号 | EW | `TrafficLight_1_EW_W2E` + `TrafficLight_1_EW_E2W` | `TrafficLightLocker_EW` | `EW_Stop_CA_Group` |
-| 2号 | NS | `TrafficLight_A` + `TrafficLight_C` | `TrafficLightLocker_NS` | `NS_Stop_CA_Group` |
-| 2号 | EW | `TrafficLight_B` + `TrafficLight_D` | `TrafficLightLocker_EW` | `EW_Stop_CA_Group` |
-| 3号 | EW | `Phase_EW` | `Locker_EW` | `Group_EW` |
-| 3号 | NS_S | `Phase_NS_S` | `Locker_NS_S` | `Group_NS_S` |
-| 3号 | NS_L | `Phase_NS_L` | `Locker_NS_L` | `Group_NS_L` |
+| 子流程 | 灯 | Locker | Group |
+|--------|-----|--------|-------|
+| NS | `TrafficLight_NS` | `TrafficLightLocker_NS` | `NS_Stop_CA_Group` |
+| EW | `TrafficLight_EW` | `TrafficLightLocker_EW` | `EW_Stop_CA_Group` |
 
 ---
 
