@@ -1,4 +1,5 @@
 # FlexSim 红绿灯（Traffic Light for FlexSim）
+> **Traffic light intersection control for FlexSim — ControlArea occupancy stops AGVs on red, releases them on green. For AGV / port / factory simulation. No ProcessFlow needed.**
 
 一个最简单的 FlexSim 红绿灯：**红灯时占用控制区域，车辆在最近的控制点停下；绿灯时释放，车辆通过**。
 
